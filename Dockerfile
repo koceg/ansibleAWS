@@ -1,12 +1,18 @@
-FROM python:3.8.1-alpine
+FROM python:3.8.1-slim-buster
 
-RUN apk add libffi-dev openssl-dev build-base \
-    && adduser -g '' -h /home/ansible -u 1000 -D -s /sbin/nologin ansible
+RUN apt-get update \
+    && apt-get install -y git openssh-client curl libffi-dev \
+    libssl-dev build-essential \
+    && adduser --gecos '' --home /home/ansible --uid 1000 ansible \
+    && cd /tmp \
+    && curl -O https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz \
+    && tar xvf oc.tar.gz \
+    && ./oc adm release extract --command openshift-install registry.svc.ci.openshift.org/origin/release:4.4.0-0.okd-2020-03-10-214705 \
+    && mv openshift-install /usr/bin/ \
+    && pip3 install boto boto3 ansible
 
 USER ansible
 
-RUN pip3 install --user boto boto3 ansible
+VOLUME /playbooks
 
-VOLUME /playbookRepo
-
-# docker run -it -v $PWD:/playbookRepo --rm ansible:aws
+# docker run -it -v $PWD:/playbooks --rm ansible:aws bash
